@@ -63,9 +63,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cairn/cairn"
-Documentation = "https://github.com/cairn/cairn#readme"
-Issues = "https://github.com/cairn/cairn/issues"
+Homepage = "https://github.com/DimaAntoniuk/cairn"
+Documentation = "https://github.com/DimaAntoniuk/cairn#readme"
+Issues = "https://github.com/DimaAntoniuk/cairn/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cairn"]
