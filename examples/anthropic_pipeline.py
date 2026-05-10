@@ -1,21 +1,19 @@
-"""End-to-end demo using the real Anthropic API.
+"""End-to-end demo using the real Anthropic API via LlamaIndex.
 
 Requires:
-    pip install 'cairn[anthropic]'
+    pip install 'cairn[anthropic,llamaindex]'
     export ANTHROPIC_API_KEY=...
 
 Run:
     python examples/anthropic_pipeline.py
 """
 
-from __future__ import annotations
-
 import asyncio
 
 from cairn import KnowledgeLayer
+from cairn.domain import ArtifactType
+from cairn.infra.llm import DEFAULT_MODEL, LlamaIndexLLMAdapter
 from cairn.ingestion import ManualConnector
-from cairn.llm import AnthropicClient
-from cairn.schemas import ArtifactType
 
 
 SAMPLE_DOCS = [
@@ -29,7 +27,10 @@ SAMPLE_DOCS = [
 
 
 async def main() -> None:
-    layer = KnowledgeLayer(llm=AnthropicClient())
+    from llama_index.llms.anthropic import Anthropic
+
+    llm = LlamaIndexLLMAdapter(Anthropic(model=DEFAULT_MODEL))
+    layer = KnowledgeLayer(llm=llm)
 
     await layer.ingest_from([ManualConnector.from_texts(SAMPLE_DOCS)])
     result = await layer.process_buffer(artifact_type=ArtifactType.ACCOUNT_INTELLIGENCE)
@@ -43,7 +44,6 @@ async def main() -> None:
     print("\n=== Assembled context ===")
     print(ctx.render())
 
-    # Refresh the operational wiki and surface evaluation issues.
     pages = await layer.refresh_wiki()
     print(f"\nGenerated {len(pages)} wiki page(s).")
 

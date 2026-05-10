@@ -1,23 +1,21 @@
-"""End-to-end demo using the StubLLMClient (no API key required).
+"""End-to-end demo using the MockLLM (no API key required).
 
 Run:
     python examples/end_to_end.py
 """
 
-from __future__ import annotations
-
 import asyncio
 
 from cairn import KnowledgeLayer
+from cairn.domain import ArtifactType
+from cairn.infra.llm import MockLLM
 from cairn.ingestion import ManualConnector
-from cairn.llm import LLMTask, StubLLMClient
-from cairn.schemas import ArtifactType
 
 
-def make_stub() -> StubLLMClient:
-    return StubLLMClient(
-        responses={
-            (LLMTask.STANDARD, "expert information extractor"): {
+def make_mock() -> MockLLM:
+    return MockLLM(
+        structured_responses={
+            "expert information extractor": {
                 "entities": [
                     {
                         "name": "Acme",
@@ -33,7 +31,7 @@ def make_stub() -> StubLLMClient:
                     },
                 ]
             },
-            (LLMTask.STANDARD, "relationship extractor"): {
+            "relationship extractor": {
                 "relationships": [
                     {
                         "source": "EMEA Healthcare Pricing",
@@ -43,7 +41,7 @@ def make_stub() -> StubLLMClient:
                     }
                 ]
             },
-            (LLMTask.STANDARD, "state/decision/constraint extractor"): {
+            "state/decision/constraint extractor": {
                 "claims": [
                     {
                         "subject": "EMEA Healthcare Pricing",
@@ -53,7 +51,7 @@ def make_stub() -> StubLLMClient:
                     }
                 ]
             },
-            (LLMTask.STANDARD, "knowledge artifact compiler"): {
+            "knowledge artifact compiler": {
                 "title": "EMEA Healthcare Pricing — Acme",
                 "summary": "Pricing held at last-quarter levels pending legal review.",
                 "content": {
@@ -66,12 +64,12 @@ def make_stub() -> StubLLMClient:
                 "confidence": 0.88,
                 "conflicts": [],
             },
-        }
+        },
     )
 
 
 async def main() -> None:
-    layer = KnowledgeLayer(llm=make_stub())
+    layer = KnowledgeLayer(llm=make_mock())
 
     docs = [
         "Pricing for Acme Corporation in EMEA Healthcare is held at "

@@ -1,30 +1,12 @@
-"""Optional LlamaIndex integration.
-
-Wraps `KnowledgeLayer.query` as a `BaseRetriever` so downstream LlamaIndex
-agents (FunctionAgent, Workflow, ToolCallingAgent) can plug into the
-knowledge layer without bespoke glue.
-
-Install the extra:
-    pip install 'cairn[llamaindex]'
-"""
-
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
-from .errors import ConfigError
+from .domain import ConfigError
 
 if TYPE_CHECKING:  # pragma: no cover
     from llama_index.core.retrievers import BaseRetriever
 
 
-def build_retriever(layer: Any, *, token_budget: int = 4000, top_k: int = 10) -> BaseRetriever:
-    """Return a LlamaIndex BaseRetriever backed by the knowledge layer.
-
-    Each LlamaIndex `query_str` is executed via `layer.query(...)`; the
-    assembled fragments become NodeWithScore values, preserving artifact
-    metadata so downstream tools can audit provenance.
-    """
+def build_retriever(layer: Any, *, token_budget: int = 4000, top_k: int = 10) -> "BaseRetriever":
     try:
         from llama_index.core.retrievers import BaseRetriever
         from llama_index.core.schema import NodeWithScore, QueryBundle, TextNode
@@ -62,7 +44,6 @@ def build_retriever(layer: Any, *, token_budget: int = 4000, top_k: int = 10) ->
             return nodes
 
         def _retrieve(self, query_bundle: QueryBundle) -> list[NodeWithScore]:
-            # Sync entry point; runs the async path on a fresh event loop.
             import anyio
 
             return anyio.run(self._aretrieve, query_bundle)

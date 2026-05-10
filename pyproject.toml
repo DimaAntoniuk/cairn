@@ -7,7 +7,7 @@ name = "cairn"
 version = "0.1.0"
 description = "Agent Knowledge Layer: persistent semantic memory, compiled artifacts, and runtime context assembly for LLM agents."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Cairn Contributors" }]
 keywords = [
@@ -20,20 +20,18 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Typing :: Typed",
 ]
 dependencies = [
     "pydantic>=2.6,<3.0",
     "anyio>=4.0",
-    "typing-extensions>=4.9",
 ]
 
 [project.optional-dependencies]
-anthropic = ["anthropic>=0.40"]
+anthropic = ["llama-index-llms-anthropic>=0.6"]
 neo4j = ["neo4j>=5.20"]
 qdrant = ["qdrant-client>=1.9"]
 postgres = ["asyncpg>=0.29", "sqlalchemy[asyncio]>=2.0"]
@@ -42,7 +40,8 @@ api = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
 llamaindex = ["llama-index-core>=0.10"]
 observability = ["opentelemetry-api>=1.24", "opentelemetry-sdk>=1.24"]
 all = [
-    "anthropic>=0.40",
+    "llama-index-llms-anthropic>=0.6",
+    "llama-index-core>=0.10",
     "neo4j>=5.20",
     "qdrant-client>=1.9",
     "asyncpg>=0.29",
@@ -75,19 +74,20 @@ include = ["src/cairn", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["src/cairn"]
+python_files = ["*__spec.py"]
 addopts = "-ra --strict-markers"
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF"]
 ignore = ["E501"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 strict = true
 warn_unused_ignores = true
 warn_return_any = true
@@ -117,6 +117,10 @@ module = [
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["cairn.api.*", "cairn.llamaindex_bridge"]
+module = ["cairn.api.*", "cairn.llamaindex_bridge", "cairn.infra.llm.llm__llamaindex"]
 disallow_untyped_decorators = false
 disable_error_code = ["misc", "no-any-unimported"]
+
+[[tool.mypy.overrides]]
+module = ["cairn.infra.connectors.connectors__scaffolds"]
+disallow_untyped_defs = false

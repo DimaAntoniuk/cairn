@@ -6,45 +6,45 @@ context assembly for LLM agents.
 Quick start:
 
     from cairn import KnowledgeLayer
-    from cairn.llm import AnthropicClient
-    from cairn.ingestion import ManualConnector
+    from cairn.infra.llm import LlamaIndexLLMAdapter
 
-    layer = KnowledgeLayer(llm=AnthropicClient())
+    layer = KnowledgeLayer(llm=LlamaIndexLLMAdapter(your_llm))
     await layer.ingest_from([ManualConnector.from_texts(["..."])])
     await layer.process_buffer()
     context = await layer.query("Pricing policy for Acme in EMEA Healthcare")
     prompt = context.render()
 
-See `examples/` for end-to-end usage including a stubbed LLM for testing.
+See ``examples/`` for end-to-end usage including a mock LLM for testing.
 """
 
-from .errors import (
-    CairnError,
-    ConfigError,
-    ContextBudgetError,
-    ExtractionError,
-    IngestionError,
-    LLMError,
-    RetrievalError,
-    StoreError,
-)
-from .layer import KnowledgeLayer, ProcessResult
-from .schemas import (
+from .domain import (
     Artifact,
     ArtifactType,
     AssembledContext,
+    CairnError,
+    ChatMessage,
+    ChatResponse,
     Confidence,
+    ConfigError,
+    ContextBudgetError,
     ContextFragment,
     Entity,
     EntityType,
     ExtractedFact,
+    ExtractionError,
+    ILLMClient,
+    IngestionError,
+    LLMError,
     PricingPolicyArtifact,
     Relationship,
     RelationshipType,
+    RetrievalError,
     SourceDocument,
     SourceRef,
     SourceSystem,
+    StoreError,
 )
+from .layer import KnowledgeLayer, ProcessResult
 
 __version__ = "0.1.0"
 
@@ -53,6 +53,8 @@ __all__ = [
     "ArtifactType",
     "AssembledContext",
     "CairnError",
+    "ChatMessage",
+    "ChatResponse",
     "Confidence",
     "ConfigError",
     "ContextBudgetError",
@@ -61,6 +63,7 @@ __all__ = [
     "EntityType",
     "ExtractedFact",
     "ExtractionError",
+    "ILLMClient",
     "IngestionError",
     "KnowledgeLayer",
     "LLMError",
