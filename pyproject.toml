@@ -1,0 +1,122 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cairn"
+version = "0.1.0"
+description = "Agent Knowledge Layer: persistent semantic memory, compiled artifacts, and runtime context assembly for LLM agents."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Cairn Contributors" }]
+keywords = [
+    "llm", "agents", "rag", "knowledge-graph", "semantic-memory",
+    "anthropic", "claude", "llamaindex", "context-engineering",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pydantic>=2.6,<3.0",
+    "anyio>=4.0",
+    "typing-extensions>=4.9",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.40"]
+neo4j = ["neo4j>=5.20"]
+qdrant = ["qdrant-client>=1.9"]
+postgres = ["asyncpg>=0.29", "sqlalchemy[asyncio]>=2.0"]
+nats = ["nats-py>=2.7"]
+api = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
+llamaindex = ["llama-index-core>=0.10"]
+observability = ["opentelemetry-api>=1.24", "opentelemetry-sdk>=1.24"]
+all = [
+    "anthropic>=0.40",
+    "neo4j>=5.20",
+    "qdrant-client>=1.9",
+    "asyncpg>=0.29",
+    "sqlalchemy[asyncio]>=2.0",
+    "nats-py>=2.7",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "llama-index-core>=0.10",
+    "opentelemetry-api>=1.24",
+    "opentelemetry-sdk>=1.24",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/cairn/cairn"
+Documentation = "https://github.com/cairn/cairn#readme"
+Issues = "https://github.com/cairn/cairn/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cairn"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/cairn", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_untyped_defs = true
+
+# Optional integrations: type-check leniently because the deps may be absent
+# in CI / dev installs.
+[[tool.mypy.overrides]]
+module = [
+    "anthropic",
+    "anthropic.*",
+    "fastapi",
+    "fastapi.*",
+    "llama_index",
+    "llama_index.*",
+    "neo4j",
+    "qdrant_client",
+    "qdrant_client.*",
+    "nats",
+    "nats.*",
+    "psycopg",
+    "psycopg.*",
+    "langfuse",
+    "opentelemetry",
+    "opentelemetry.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["cairn.api.*", "cairn.llamaindex_bridge"]
+disallow_untyped_decorators = false
+disable_error_code = ["misc", "no-any-unimported"]
