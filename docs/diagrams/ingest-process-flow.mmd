@@ -1,0 +1,83 @@
+%%{ init: { 'theme': 'base', 'themeVariables': { 'actorBkg': '#4A90D9', 'actorTextColor': '#fff', 'activationBorderColor': '#2E6BA4', 'signalColor': '#333' } } }%%
+
+sequenceDiagram
+    actor User
+    participant KL as KnowledgeLayer
+    participant IO as IngestionOrchestrator
+    participant Conn as Connector(s)
+    participant Ext as LLMExtractor
+    participant LLM as ILLMClient
+    participant GB as GraphBuilder
+    participant GS as GraphStore
+    participant AC as ArtifactCompiler
+    participant AS as ArtifactStore
+    participant VS as VectorStore
+
+    Note over User,VS: PHASE 1 — Ingestion
+
+    User->>KL: ingest_from([connectors])
+    activate KL
+    KL->>IO: run(since)
+    activate IO
+
+    par Concurrent connectors
+        IO->>Conn: fetch(since)
+        loop Each document
+            Conn-->>IO: SourceDocument
+            IO->>KL: sink(doc) → buffer
+        end
+    end
+
+    IO-->>KL: document_count
+    deactivate IO
+    KL-->>User: count
+    deactivate KL
+
+    Note over User,VS: PHASE 2 — Processing
+
+    User->>KL: process_buffer()
+    activate KL
+
+    rect rgba(74, 144, 217, 0.1)
+        Note over Ext,LLM: 3-Pass Extraction
+        loop Each buffered document
+            KL->>Ext: extract(document)
+            activate Ext
+            Ext->>LLM: astructured_predict(EntitiesResponse)
+            LLM-->>Ext: entities[]
+            Ext->>LLM: astructured_predict(RelationshipsResponse)
+            LLM-->>Ext: relationships[]
+            Ext->>LLM: astructured_predict(ClaimsResponse)
+            LLM-->>Ext: claims[]
+            Ext-->>KL: ExtractedFact[]
+            deactivate Ext
+        end
+    end
+
+    rect rgba(123, 198, 126, 0.1)
+        Note over GB,GS: Entity Resolution & Graph
+        KL->>GB: absorb(all_facts)
+        activate GB
+        GB->>GS: find → match → merge → upsert entities
+        GB->>GS: upsert relationships
+        GB-->>KL: (entities[], rel_count)
+        deactivate GB
+    end
+
+    rect rgba(245, 166, 35, 0.1)
+        Note over AC,VS: Artifact Compilation & Indexing
+        KL->>AC: compile_grouped(facts, entity_index)
+        activate AC
+        AC->>LLM: astructured_predict(CompiledArtifactResponse)
+        LLM-->>AC: {title, summary, content, confidence}
+        AC-->>KL: Artifact[]
+        deactivate AC
+
+        loop Each artifact
+            KL->>AS: put(artifact)
+            KL->>VS: upsert(id, vector, text)
+        end
+    end
+
+    KL-->>User: ProcessResult
+    deactivate KL

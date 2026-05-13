@@ -1,0 +1,139 @@
+%%{ init: { 'theme': 'base' } }%%
+
+classDiagram
+    direction TB
+
+    class SourceDocument {
+        +str id
+        +SourceRef ref
+        +str|None title
+        +str content
+        +dict metadata
+        +datetime ingested_at
+    }
+
+    class SourceRef {
+        +SourceSystem system
+        +str external_id
+        +str|None uri
+        +datetime fetched_at
+        +tuple~str~ permissions
+    }
+
+    class ExtractedFact {
+        +str id
+        +str fact_type
+        +dict payload
+        +SourceRef source_ref
+        +Confidence confidence
+        +datetime extracted_at
+    }
+
+    class Entity {
+        +str id
+        +EntityType entity_type
+        +str name
+        +list~str~ aliases
+        +dict attributes
+        +list~SourceRef~ source_refs
+        +Confidence confidence
+        +datetime created_at
+        +datetime updated_at
+        +merge(other) Entity
+    }
+
+    class Relationship {
+        +str id
+        +str source_entity_id
+        +str target_entity_id
+        +RelationshipType relationship_type
+        +dict attributes
+        +Confidence confidence
+        +datetime|None valid_from
+        +datetime|None valid_until
+        +list~SourceRef~ source_refs
+    }
+
+    class Artifact {
+        +str artifact_id
+        +ArtifactType artifact_type
+        +str title
+        +str summary
+        +dict content
+        +list~str~ entity_refs
+        +list~SourceRef~ source_refs
+        +tuple~str~ permissions
+        +Confidence confidence
+        +int version
+        +str|None superseded_by
+        +datetime created_at
+        +datetime updated_at
+    }
+
+    class Confidence {
+        +float score
+        +str|None rationale
+    }
+
+    class Query {
+        +str intent
+        +tuple~str~ entity_hints
+        +tuple~ArtifactType~ artifact_types
+        +tuple~str~ permissions
+        +float min_confidence
+        +int|None max_age_days
+        +int top_k
+        +int graph_depth
+    }
+
+    class RetrievalResult {
+        +Artifact artifact
+        +float score
+        +list~str~ reasons
+    }
+
+    class ContextFragment {
+        +str id
+        +str text
+        +int token_estimate
+        +float priority
+        +Confidence confidence
+        +list~SourceRef~ source_refs
+        +str|None artifact_id
+        +list~str~ entity_ids
+    }
+
+    class AssembledContext {
+        +list~ContextFragment~ fragments
+        +int total_tokens
+        +list~str~ dropped_fragment_ids
+        +datetime assembled_at
+        +render() str
+    }
+
+    class EvalIssue {
+        +IssueKind kind
+        +list~str~ artifact_ids
+        +str description
+        +float severity
+        +dict metadata
+    }
+
+    SourceDocument --> SourceRef : ref
+    ExtractedFact --> SourceRef : source_ref
+    ExtractedFact --> Confidence : confidence
+    Entity --> Confidence : confidence
+    Entity --> SourceRef : source_refs
+    Relationship --> Confidence : confidence
+    Relationship --> SourceRef : source_refs
+    Artifact --> Confidence : confidence
+    Artifact --> SourceRef : source_refs
+    ContextFragment --> Confidence : confidence
+    ContextFragment --> SourceRef : source_refs
+
+    Entity "1" --> "*" Relationship : source/target
+    Artifact "*" --> "*" Entity : entity_refs
+    RetrievalResult --> Artifact : artifact
+    AssembledContext --> ContextFragment : fragments
+    Query ..> RetrievalResult : produces
+    RetrievalResult ..> ContextFragment : assembled into

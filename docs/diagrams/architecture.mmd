@@ -1,0 +1,80 @@
+%%{ init: { 'theme': 'base', 'themeVariables': { 'primaryColor': '#4A90D9', 'primaryTextColor': '#fff', 'primaryBorderColor': '#2E6BA4', 'lineColor': '#666', 'secondaryColor': '#E8D44D', 'tertiaryColor': '#7BC67E' } } }%%
+
+graph TB
+    subgraph PUBLIC["Public API"]
+        direction LR
+        KL["🏔️ KnowledgeLayer<br/><small>Facade — single entry point</small>"]
+        API["🌐 REST API<br/><small>FastAPI endpoints</small>"]
+    end
+
+    subgraph SERVICES["Service Layer"]
+        ING["📥 IngestionOrchestrator<br/><small>Concurrent connector execution</small>"]
+        EXT["🔍 LLMExtractor<br/><small>3-pass entity/rel/claim extraction</small>"]
+        GB["🕸️ GraphBuilder<br/><small>Entity resolution + graph persistence</small>"]
+        AC["📦 ArtifactCompiler<br/><small>LLM synthesis → structured artifacts</small>"]
+        RP["🎯 RetrievalPlanner<br/><small>Vector + graph dual-path search</small>"]
+        CA["⚖️ ContextAssembler<br/><small>Priority ranking + token budgeting</small>"]
+        EV["✅ EvaluationLoop<br/><small>Quality: stale, confidence, contradictions</small>"]
+        WG["📖 WikiGenerator<br/><small>Auto-generated entity pages</small>"]
+    end
+
+    subgraph PORTS["Domain — Ports (Interfaces)"]
+        direction LR
+        ILC["ILLMClient"]
+        IGS["IGraphStore"]
+        IAS["IArtifactStore"]
+        IVS["IVectorStore"]
+        IEB["IEmbedder"]
+        ICO["IConnector"]
+        ICP["ICompressor"]
+    end
+
+    subgraph ADAPTERS["Infrastructure — Adapters"]
+        direction LR
+        LIA["LlamaIndexLLMAdapter"]
+        MEM_G["InMemoryGraphStore"]
+        MEM_A["InMemoryArtifactStore"]
+        MEM_V["InMemoryVectorStore"]
+        HE["HashEmbedder"]
+        MC["ManualConnector"]
+        LC["LLMCompressor"]
+    end
+
+    API --> KL
+    KL --> ING
+    KL --> EXT
+    KL --> GB
+    KL --> AC
+    KL --> RP
+    KL --> CA
+    KL --> EV
+    KL --> WG
+
+    EXT -.-> ILC
+    AC -.-> ILC
+    EV -.-> ILC
+    WG -.-> ILC
+    CA -.-> ICP
+
+    GB -.-> IGS
+    RP -.-> IAS
+    RP -.-> IGS
+    RP -.-> IVS
+    RP -.-> IEB
+    WG -.-> IAS
+    WG -.-> IGS
+    EV -.-> IAS
+    ING -.-> ICO
+
+    ILC --> LIA
+    IGS --> MEM_G
+    IAS --> MEM_A
+    IVS --> MEM_V
+    IEB --> HE
+    ICO --> MC
+    ICP --> LC
+
+    style PUBLIC fill:#EBF5FB,stroke:#2E6BA4
+    style SERVICES fill:#FFF9E6,stroke:#C4B030
+    style PORTS fill:#FDEBD0,stroke:#E67E22
+    style ADAPTERS fill:#E8F8E8,stroke:#4F9B52

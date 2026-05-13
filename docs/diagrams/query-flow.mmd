@@ -1,0 +1,73 @@
+%%{ init: { 'theme': 'base' } }%%
+
+sequenceDiagram
+    actor User
+    participant KL as KnowledgeLayer
+    participant RP as RetrievalPlanner
+    participant EB as Embedder
+    participant VS as VectorStore
+    participant GS as GraphStore
+    participant AS as ArtifactStore
+    participant CA as ContextAssembler
+    participant CP as LLMCompressor (light)
+
+    User->>KL: query(intent, entity_hints, token_budget)
+    activate KL
+
+    KL->>RP: plan(Query)
+    activate RP
+
+    rect rgba(74, 144, 217, 0.1)
+        Note over RP,AS: Vector Retrieval Path
+        RP->>EB: embed(intent)
+        EB-->>RP: vector[float]
+        RP->>VS: search(vector, top_k×3)
+        VS-->>RP: [(artifact_id, score, text)]
+        RP->>AS: get(artifact_id) for each hit
+        AS-->>RP: Artifact objects
+    end
+
+    rect rgba(123, 198, 126, 0.1)
+        Note over RP,AS: Graph Retrieval Path
+        loop Each entity_hint
+            RP->>GS: find_entities(name=hint)
+            GS-->>RP: seed Entity
+            RP->>GS: neighbors(id, depth)
+            GS-->>RP: neighbor Entities
+            RP->>AS: list(entity_ref=id) for seeds + neighbors
+            AS-->>RP: related Artifacts
+        end
+    end
+
+    Note over RP: Merge scores + Apply filters
+    Note over RP: artifact_type ∩ confidence ∩ age ∩ permissions
+    Note over RP: Sort by score DESC → take top_k
+
+    RP-->>KL: RetrievalResult[]
+    deactivate RP
+
+    KL->>CA: assemble(results, token_budget)
+    activate CA
+
+    rect rgba(245, 166, 35, 0.1)
+        Note over CA,CP: Context Assembly
+        Note over CA: Render → Priority → Dedupe → Sort
+
+        loop Each fragment (priority order)
+            alt Fits within budget
+                Note over CA: ✅ Include
+            else Over budget, priority ≥ 0.5
+                CA->>CP: compress(text, remaining_tokens)
+                CP-->>CA: compressed_text
+                Note over CA: Include if compressed fits
+            else Low priority or no space
+                Note over CA: ❌ Drop
+            end
+        end
+    end
+
+    CA-->>KL: AssembledContext
+    deactivate CA
+
+    KL-->>User: AssembledContext.render()
+    deactivate KL

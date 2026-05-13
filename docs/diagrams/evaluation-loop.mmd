@@ -1,0 +1,50 @@
+%%{ init: { 'theme': 'base' } }%%
+
+flowchart TD
+    START["EvaluationLoop.run()"] --> LOAD["Load all active artifacts<br/><small>iter_active_artifacts(store.list())</small>"]
+
+    LOAD --> C1
+    LOAD --> C2
+    LOAD --> C3
+    LOAD --> C4
+
+    subgraph "Check 1: Staleness"
+        C1{"updated_at<br/>older than<br/>30 days?"}
+        C1 -->|Yes| I1["🔸 STALE<br/><small>severity = age / (threshold × 4)</small><br/><small>max 1.0</small>"]
+        C1 -->|No| OK1["✅ Fresh"]
+    end
+
+    subgraph "Check 2: Confidence"
+        C2{"confidence<br/>< 0.4?"}
+        C2 -->|Yes| I2["🔸 LOW_CONFIDENCE<br/><small>severity = 1.0 - confidence</small>"]
+        C2 -->|No| OK2["✅ Confident"]
+    end
+
+    subgraph "Check 3: Provenance"
+        C3{"source_refs<br/>empty?"}
+        C3 -->|Yes| I3["🔸 UNREFERENCED<br/><small>severity = 0.60 (fixed)</small>"]
+        C3 -->|No| OK3["✅ Sourced"]
+    end
+
+    subgraph "Check 4: Contradictions (optional)"
+        C4["Group artifacts by entity_id"]
+        C4 --> PAIRS["Pairwise comparison<br/><small>same entity + same type</small>"]
+        PAIRS --> LLM{"Heavy LLM:<br/>contradicts?"}
+        LLM -->|Yes| I4["🔴 CONTRADICTION<br/><small>severity = 0.85 (fixed)</small>"]
+        LLM -->|No| OK4["✅ Consistent"]
+    end
+
+    I1 --> COLLECT["Collect all EvalIssues"]
+    I2 --> COLLECT
+    I3 --> COLLECT
+    I4 --> COLLECT
+
+    COLLECT --> SORT["Sort by severity DESC"]
+    SORT --> RETURN["Return to caller"]
+
+    style START fill:#4A90D9,color:#fff
+    style I1 fill:#F5A623,color:#333
+    style I2 fill:#F5A623,color:#333
+    style I3 fill:#F5A623,color:#333
+    style I4 fill:#D94A4A,color:#fff
+    style RETURN fill:#7BC67E,color:#333

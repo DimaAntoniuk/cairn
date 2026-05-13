@@ -1,0 +1,51 @@
+%%{ init: { 'theme': 'base' } }%%
+
+graph LR
+    subgraph "Entity Types"
+        direction TB
+        PERSON["👤 Person"]
+        ORG["🏢 Organization"]
+        PROD["📦 Product"]
+        PROJ["🚀 Project"]
+        POL["📜 Policy"]
+        EVT["📅 Event"]
+        CAMP["📣 Campaign"]
+        RISK["⚠️ Risk"]
+    end
+
+    subgraph "Example Graph"
+        ALICE["Alice Chen<br/><small>person</small>"]
+        PTTEAM["Platform Team<br/><small>organization</small>"]
+        ATHENA["Athena<br/><small>product</small>"]
+        MERCURY["Project Mercury<br/><small>project</small>"]
+        DRP["Data Residency Policy<br/><small>policy</small>"]
+        SOC2["SOC-2 Audit<br/><small>event</small>"]
+        LAUNCH["Launch Decision<br/><small>decision</small>"]
+    end
+
+    PTTEAM -->|owns| ATHENA
+    MERCURY -->|part_of| ATHENA
+    DRP -->|applies_to| MERCURY
+    SOC2 -->|applies_to| ATHENA
+    ALICE -->|authored_by| DRP
+    ALICE -->|approved_by| LAUNCH
+    LAUNCH -->|blocks| MERCURY
+
+    subgraph "Relationship Types"
+        direction TB
+        R1["owns — ownership"]
+        R2["depends_on — dependency"]
+        R3["blocks — blocker"]
+        R4["part_of — hierarchy"]
+        R5["targets — scope"]
+        R6["applies_to — rule"]
+        R7["approved_by — authority"]
+    end
+
+    style ALICE fill:#D94A4A,color:#fff
+    style PTTEAM fill:#4A90D9,color:#fff
+    style ATHENA fill:#7BC67E,color:#333
+    style MERCURY fill:#7BC67E,color:#333
+    style DRP fill:#E8D44D,color:#333
+    style SOC2 fill:#F5A623,color:#333
+    style LAUNCH fill:#D94A4A,color:#fff

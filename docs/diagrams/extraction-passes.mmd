@@ -1,0 +1,26 @@
+%%{ init: { 'theme': 'base' } }%%
+
+flowchart TD
+    DOC["📄 SourceDocument<br/><small>Raw text content</small>"] --> TRUNC["✂️ Truncate<br/><small>max 8000 chars (head + tail)</small>"]
+
+    TRUNC --> P1["🔍 Pass 1: Entity Extraction<br/><small>astructured_predict(EntitiesResponse)</small>"]
+    TRUNC --> P3["📋 Pass 3: Claim Extraction<br/><small>astructured_predict(ClaimsResponse)</small>"]
+
+    P1 --> P2["🔗 Pass 2: Relationship Extraction<br/><small>astructured_predict(RelationshipsResponse)</small><br/><small>Uses entity names from Pass 1</small>"]
+
+    P1 --> ENTITIES["Entities<br/><small>name, type, aliases, confidence</small>"]
+    P2 --> RELS["Relationships<br/><small>source → target, type, confidence</small>"]
+    P3 --> CLAIMS["Claims<br/><small>subject, kind, statement, confidence</small>"]
+
+    ENTITIES --> CONVERT["Convert to ExtractedFact[]"]
+    RELS --> CONVERT
+    CLAIMS --> CONVERT
+
+    CONVERT --> FACTS["📦 fact_type: entity<br/>📦 fact_type: relationship<br/>📦 fact_type: attribute<br/>📦 fact_type: decision<br/>📦 fact_type: constraint"]
+
+    style DOC fill:#F5A623,color:#333,stroke:#D4850D
+    style P1 fill:#4A90D9,color:#fff,stroke:#2E6BA4
+    style P2 fill:#4A90D9,color:#fff,stroke:#2E6BA4
+    style P3 fill:#4A90D9,color:#fff,stroke:#2E6BA4
+    style FACTS fill:#7BC67E,color:#333,stroke:#4F9B52
+    style TRUNC fill:#E8D44D,color:#333,stroke:#C4B030

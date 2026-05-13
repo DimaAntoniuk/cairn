@@ -1,0 +1,29 @@
+%%{ init: { 'theme': 'base' } }%%
+
+flowchart LR
+    subgraph INIT["KnowledgeLayer Constructor"]
+        direction TB
+        LLM["<b>llm</b><br/><small>Default: claude-sonnet-4</small><br/><small>Balanced cost/quality</small>"]
+        LIGHT["<b>light_llm</b><br/><small>Default: claude-haiku-4.5</small><br/><small>Fast + cheap</small>"]
+        HEAVY["<b>heavy_llm</b><br/><small>Default: claude-opus-4</small><br/><small>Maximum reasoning</small>"]
+    end
+
+    LLM --> EXT["🔍 LLMExtractor<br/><small>3-pass extraction</small>"]
+    LLM --> AC["📦 ArtifactCompiler<br/><small>Knowledge synthesis</small>"]
+    LLM --> WG["📖 WikiGenerator<br/><small>Markdown pages</small>"]
+
+    LIGHT --> LC["⚖️ LLMCompressor<br/><small>Context compression</small>"]
+
+    HEAVY --> EV["✅ EvaluationLoop<br/><small>Contradiction detection</small>"]
+
+    subgraph ROUTING["If not provided, defaults to llm"]
+        direction TB
+        NOTE1["light_llm ??= llm"]
+        NOTE2["heavy_llm ??= llm"]
+    end
+
+    style LLM fill:#4A90D9,color:#fff,stroke:#2E6BA4
+    style LIGHT fill:#7BC67E,color:#333,stroke:#4F9B52
+    style HEAVY fill:#D94A4A,color:#fff,stroke:#A33636
+    style INIT fill:#F0F0F0,stroke:#999
+    style ROUTING fill:#FFF9E6,stroke:#C4B030
