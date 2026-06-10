@@ -118,7 +118,9 @@ class RetrievalPlanner:
             cutoff = datetime.now(UTC) - timedelta(days=query.max_age_days)
             if artifact.updated_at < cutoff:
                 return False
-        if query.permissions and artifact.permissions:
+        if artifact.permissions:
+            if not query.permissions:
+                return False
             allowed = set(query.permissions)
             required = set(artifact.permissions)
             if not required.issubset(allowed):

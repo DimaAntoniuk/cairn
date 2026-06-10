@@ -11,7 +11,9 @@ class LlamaIndexLLMAdapter:
 
     def __init__(self, llm: Any) -> None:
         try:
+            from llama_index.core import PromptTemplate
             from llama_index.core.llms import LLM as LlamaLLM  # noqa: N811
+            from llama_index.core.llms import ChatMessage as LIChatMessage
         except ImportError as exc:
             raise ConfigError(
                 "llamaindex extra not installed; pip install 'cairn[llamaindex]'"
@@ -19,6 +21,8 @@ class LlamaIndexLLMAdapter:
         if not isinstance(llm, LlamaLLM):
             raise TypeError(f"expected a LlamaIndex LLM, got {type(llm).__name__}")
         self._llm = llm
+        self._LIChatMessage = LIChatMessage
+        self._PromptTemplate = PromptTemplate
 
     async def achat(
         self,
@@ -27,10 +31,8 @@ class LlamaIndexLLMAdapter:
         max_tokens: int = 1024,
         temperature: float = 0.0,
     ) -> ChatResponse:
-        from llama_index.core.llms import ChatMessage as LIChatMessage
-
         li_messages = [
-            LIChatMessage(role=m.role, content=m.content) for m in messages
+            self._LIChatMessage(role=m.role, content=m.content) for m in messages
         ]
         response = await self._llm.achat(li_messages, max_tokens=max_tokens, temperature=temperature)
         return ChatResponse(content=response.message.content or "")
@@ -43,9 +45,10 @@ class LlamaIndexLLMAdapter:
         max_tokens: int = 1024,
         temperature: float = 0.0,
     ) -> T:
-        from llama_index.core import PromptTemplate
-
-        pt = PromptTemplate(prompt)
+        # Escape braces so PromptTemplate treats them as literal text,
+        # preventing KeyError/injection from user content containing {}.
+        safe_prompt = prompt.replace("{", "{{").replace("}", "}}")
+        pt = self._PromptTemplate(safe_prompt)
         return await self._llm.astructured_predict(
             output_cls, pt, llm_kwargs={"max_tokens": max_tokens, "temperature": temperature}
         )

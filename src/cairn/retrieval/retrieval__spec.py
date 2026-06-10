@@ -97,9 +97,9 @@ async def test_retrieval_permission_filter(planner: RetrievalPlanner) -> None:
         await planner.index_artifact(art)
 
     no_perms = await planner.plan(Query(intent="open secret", permissions=()))
-    assert {r.artifact.title for r in no_perms} == {"Public", "Private"}
+    assert {r.artifact.title for r in no_perms} == {"Public"}
     with_other = await planner.plan(Query(intent="open secret", permissions=("eng",)))
-    assert "Private" not in {r.artifact.title for r in with_other}
+    assert {r.artifact.title for r in with_other} == {"Public"}
     with_legal = await planner.plan(Query(intent="open secret", permissions=("legal",)))
     assert {r.artifact.title for r in with_legal} == {"Public", "Private"}
 

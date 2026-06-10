@@ -44,6 +44,7 @@ class ArtifactCompiler:
             raise ExtractionError(f"artifact compilation failed: {exc}") from exc
 
         merged_sources = _dedupe_refs(ref for f in fact_list for ref in [f.source_ref])
+        merged_permissions = tuple(sorted({p for s in merged_sources for p in s.permissions}))
         confidence = max(0.0, min(1.0, result.confidence))
 
         return Artifact(
@@ -56,6 +57,7 @@ class ArtifactCompiler:
             },
             entity_refs=[entity.id],
             source_refs=merged_sources,
+            permissions=merged_permissions,
             confidence=Confidence(score=confidence),
         )
 
