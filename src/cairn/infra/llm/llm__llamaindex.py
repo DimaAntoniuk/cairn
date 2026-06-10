@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel
 
@@ -49,9 +49,12 @@ class LlamaIndexLLMAdapter:
         # preventing KeyError/injection from user content containing {}.
         safe_prompt = prompt.replace("{", "{{").replace("}", "}}")
         pt = self._PromptTemplate(safe_prompt)
-        return await self._llm.astructured_predict(
+        # self._llm is typed Any (untyped LlamaIndex LLM), so narrow the result
+        # back to the requested output type for callers.
+        result = await self._llm.astructured_predict(
             output_cls, pt, llm_kwargs={"max_tokens": max_tokens, "temperature": temperature}
         )
+        return cast(T, result)
 
 
 __all__ = ["LlamaIndexLLMAdapter"]
