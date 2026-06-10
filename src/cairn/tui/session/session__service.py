@@ -11,6 +11,7 @@ from cairn.domain import (
     EntityType,
     SourceRef,
     SourceSystem,
+    iter_active_artifacts,
 )
 from cairn.domain.llm__ports import ILLMClient
 from cairn.infra.llm import MockLLM
@@ -20,7 +21,7 @@ from .session__consts import MOCK_LABEL
 from .session__types import LLMChoice, SessionConfig
 
 
-def _has_module(name: str) -> bool:
+def has_module(name: str) -> bool:
     # find_spec imports parent packages and raises if one is missing, so a
     # dotted optional path needs the guard rather than a bare `is not None`.
     try:
@@ -33,7 +34,7 @@ def _has_module(name: str) -> bool:
 # heavy imports live in __init__). Only the concrete `Anthropic` LLM class needs
 # the extra, so resolve that one conditionally — and bind a fallback so the name
 # is always defined for the type checker.
-_HAS_ANTHROPIC = _has_module("llama_index.llms.anthropic")
+_HAS_ANTHROPIC = has_module("llama_index.llms.anthropic")
 if _HAS_ANTHROPIC:
     from llama_index.llms.anthropic import Anthropic
 else:
@@ -68,8 +69,8 @@ class CairnSession:
         self.token_budget = token_budget
 
     async def snapshot(self) -> tuple[list[Artifact], list[Entity]]:
-        """Current artifacts + entities, for the sidebar."""
-        artifacts = await self.layer.artifact_store.list()
+        """Current active artifacts + entities, for the sidebar."""
+        artifacts = iter_active_artifacts(await self.layer.artifact_store.list())
         entities = await self.layer.graph_store.find_entities()
         return artifacts, entities
 
@@ -114,35 +115,38 @@ async def seed_demo(session: CairnSession) -> int:
         _demo_entity(EntityType.ORGANIZATION, "Acme Corp"),
         _demo_entity(EntityType.PERSON, "Legal"),
     ]
+    for entity in entities:
+        await layer.graph_store.upsert_entity(entity)
+    # entity_refs must hold graph entity ids (like the compiler emits), not
+    # names — wiki/eval/graph retrieval all resolve refs via get_entity(id).
+    eid = {entity.name: entity.id for entity in entities}
     artifacts = [
         _demo_artifact(
             ArtifactType.CAMPAIGN_STATE,
             "Germany healthcare outbound",
             "Outbound is PAUSED pending Legal approval of updated compliance messaging.",
             {"status": "paused", "blocker": "legal compliance review"},
-            ["Germany", "Legal"],
+            [eid["Germany"], eid["Legal"]],
         ),
         _demo_artifact(
             ArtifactType.PRICING_POLICY,
             "EMEA healthcare pricing",
             "Standard EMEA healthcare discount capped at 15% without VP sign-off.",
             {"region": "EMEA", "max_discount": "15%"},
-            ["Germany"],
+            [eid["Germany"]],
         ),
         _demo_artifact(
             ArtifactType.ACCOUNT_INTELLIGENCE,
             "Acme Corp account",
             "Acme Corp is an expansion target in the healthcare vertical.",
             {"vertical": "healthcare", "stage": "expansion"},
-            ["Acme Corp"],
+            [eid["Acme Corp"]],
         ),
     ]
-    for entity in entities:
-        await layer.graph_store.upsert_entity(entity)
     for artifact in artifacts:
         await layer.artifact_store.put(artifact)
         await layer.retrieval.index_artifact(artifact)
     return len(artifacts)
 
 
-__all__ = ["CairnSession", "build_session", "seed_demo"]
+__all__ = ["CairnSession", "build_session", "has_module", "seed_demo"]

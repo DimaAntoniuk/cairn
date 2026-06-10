@@ -1,3 +1,5 @@
+import asyncio
+
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Footer, Header, Input, RichLog, Static
@@ -30,6 +32,10 @@ class CairnApp(App[None]):
         self._config = config
         self._session: CairnSession | None = None
         self._router: CommandRouter | None = None
+        # Serializes command workers in submission order. A lock (rather than
+        # `run_worker(exclusive=True)`) so a rapid second submit queues instead
+        # of cancelling the in-flight command mid-side-effect.
+        self._command_gate = asyncio.Lock()
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -50,6 +56,9 @@ class CairnApp(App[None]):
         except ConfigError as exc:
             self._write(f"[red]config error:[/] {esc(str(exc))}")
             return
+        except Exception as exc:  # keep the UI alive; render the failure instead
+            self._write(f"[red]startup error:[/] {esc(str(exc))}")
+            return
         self._router = CommandRouter(self._session)
         self._write(
             f"[dim]llm:[/dim] [b]{esc(self._session.llm_label)}[/b]   "
@@ -66,16 +75,17 @@ class CairnApp(App[None]):
         if not text.strip() or self._router is None:
             return
         self._echo(text)
-        self.run_worker(self._dispatch(text), exclusive=True, group="command")
+        self.run_worker(self._dispatch(text), group="command")
 
     async def _dispatch(self, text: str) -> None:
         assert self._router is not None
-        self.sub_title = _WORKING
-        try:
-            result = await self._router.dispatch(text)
-        finally:
-            self.sub_title = APP_SUBTITLE
-        await self._apply(result)
+        async with self._command_gate:
+            self.sub_title = _WORKING
+            try:
+                result = await self._router.dispatch(text)
+            finally:
+                self.sub_title = APP_SUBTITLE
+            await self._apply(result)
 
     async def _apply(self, result: CommandResult) -> None:
         if result.action == ACTION_QUIT:
@@ -84,7 +94,7 @@ class CairnApp(App[None]):
             self.exit()
             return
         if result.action == ACTION_CLEAR:
-            self.query_one("#transcript", RichLog).clear()
+            self.action_clear()
             return
         if result.body:
             self._write(result.body)

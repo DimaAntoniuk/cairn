@@ -1,15 +1,21 @@
 import argparse
-import importlib.util
 import sys
 
-from cairn.tui.session import LLMChoice, SessionConfig
+from cairn.tui.session import LLMChoice, SessionConfig, has_module
 from cairn.tui.session.session__consts import DEFAULT_LLM_MODEL, DEFAULT_TOKEN_BUDGET
 
 # The Textual app pulls in `textual`; import it only when the extra is present so
 # `cairn-tui` degrades to a friendly message instead of an ImportError traceback.
-_HAS_TEXTUAL = importlib.util.find_spec("textual") is not None
+_HAS_TEXTUAL = has_module("textual")
 if _HAS_TEXTUAL:
     from cairn.tui.app.app__service import CairnApp
+
+
+def _positive_int(value: str) -> int:
+    n = int(value)
+    if n <= 0:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, got {value!r}")
+    return n
 
 
 def _parse_args(argv: list[str] | None) -> SessionConfig:
@@ -26,7 +32,7 @@ def _parse_args(argv: list[str] | None) -> SessionConfig:
     parser.add_argument("--model", default=DEFAULT_LLM_MODEL, help="Anthropic model id")
     parser.add_argument(
         "--token-budget",
-        type=int,
+        type=_positive_int,
         default=DEFAULT_TOKEN_BUDGET,
         help="runtime context budget for /query (tokens)",
     )

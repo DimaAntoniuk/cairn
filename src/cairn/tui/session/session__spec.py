@@ -28,3 +28,8 @@ async def test_seed_demo_populates_and_is_queryable() -> None:
     # returns context even under the offline MockLLM.
     ctx = await session.layer.query("Germany healthcare outbound", token_budget=2000)
     assert "Germany" in ctx.render()
+
+    # entity_refs hold graph entity ids (not names), so /wiki resolves every
+    # seeded entity to a page instead of silently skipping them all.
+    pages = await session.layer.refresh_wiki()
+    assert len(pages) == 3

@@ -4,6 +4,7 @@ from cairn.domain import Artifact, AssembledContext, Entity, EvalIssue
 
 from .render__consts import (
     ARTIFACT_ICONS,
+    CONFIDENCE_STYLES,
     DEFAULT_ARTIFACT_ICON,
     DEFAULT_ENTITY_ICON,
     ENTITY_ICONS,
@@ -18,49 +19,39 @@ def esc(text: str) -> str:
     return text.replace("[", r"\[")
 
 
-def _confidence_style(score: float) -> str:
-    if score >= 0.7:
-        return "green"
-    if score >= 0.4:
-        return "yellow"
-    return "red"
-
-
-def _severity_style(severity: float) -> str:
-    for threshold, style in SEVERITY_STYLES:
-        if severity >= threshold:
+def _style_for(value: float, styles: tuple[tuple[float, str], ...]) -> str:
+    for threshold, style in styles:
+        if value >= threshold:
             return style
-    return "blue"
+    return styles[-1][1]
 
 
 def _conf(score: float) -> str:
-    return f"[{_confidence_style(score)}]conf {score:.2f}[/]"
+    return f"[{_style_for(score, CONFIDENCE_STYLES)}]conf {score:.2f}[/]"
+
+
+def _sidebar_section(title: str, rows: list[tuple[str, str]]) -> str:
+    if not rows:
+        return f"[b]{title}[/b]\n[dim]none yet[/dim]"
+    lines = [f"[b]{title}[/b] [dim]({len(rows)})[/dim]"]
+    for icon, text in rows[:MAX_SIDEBAR_ITEMS]:
+        lines.append(f"{icon} {esc(text)}")
+    overflow = len(rows) - MAX_SIDEBAR_ITEMS
+    if overflow > 0:
+        lines.append(f"[dim]+{overflow} more[/dim]")
+    return "\n".join(lines)
 
 
 def format_sidebar_artifacts(artifacts: Sequence[Artifact]) -> str:
-    if not artifacts:
-        return "[b]Artifacts[/b]\n[dim]none yet[/dim]"
-    lines = [f"[b]Artifacts[/b] [dim]({len(artifacts)})[/dim]"]
-    for art in artifacts[:MAX_SIDEBAR_ITEMS]:
-        icon = ARTIFACT_ICONS.get(art.artifact_type, DEFAULT_ARTIFACT_ICON)
-        lines.append(f"{icon} {esc(art.title)}")
-    overflow = len(artifacts) - MAX_SIDEBAR_ITEMS
-    if overflow > 0:
-        lines.append(f"[dim]+{overflow} more[/dim]")
-    return "\n".join(lines)
+    rows = [
+        (ARTIFACT_ICONS.get(a.artifact_type, DEFAULT_ARTIFACT_ICON), a.title) for a in artifacts
+    ]
+    return _sidebar_section("Artifacts", rows)
 
 
 def format_sidebar_entities(entities: Sequence[Entity]) -> str:
-    if not entities:
-        return "[b]Entities[/b]\n[dim]none yet[/dim]"
-    lines = [f"[b]Entities[/b] [dim]({len(entities)})[/dim]"]
-    for ent in entities[:MAX_SIDEBAR_ITEMS]:
-        icon = ENTITY_ICONS.get(ent.entity_type, DEFAULT_ENTITY_ICON)
-        lines.append(f"{icon} {esc(ent.name)}")
-    overflow = len(entities) - MAX_SIDEBAR_ITEMS
-    if overflow > 0:
-        lines.append(f"[dim]+{overflow} more[/dim]")
-    return "\n".join(lines)
+    rows = [(ENTITY_ICONS.get(e.entity_type, DEFAULT_ENTITY_ICON), e.name) for e in entities]
+    return _sidebar_section("Entities", rows)
 
 
 def format_artifacts(artifacts: Sequence[Artifact]) -> str:
@@ -129,7 +120,7 @@ def format_issues(issues: Sequence[EvalIssue]) -> str:
         return "[green]✓ no evaluation issues[/green]"
     lines = [f"[b]{len(issues)} issue(s)[/b]"]
     for issue in issues:
-        style = _severity_style(issue.severity)
+        style = _style_for(issue.severity, SEVERITY_STYLES)
         label = ISSUE_LABELS.get(issue.kind, issue.kind.value)
         refs = f" [dim]{esc(', '.join(issue.artifact_ids))}[/dim]" if issue.artifact_ids else ""
         lines.append(f"[{style}]●[/] [b]{label}[/b] {issue.severity:.2f}{refs}\n   {esc(issue.description)}")

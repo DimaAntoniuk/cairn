@@ -1,8 +1,7 @@
 from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import cast
 
-from cairn.domain import ArtifactType
+from cairn.domain import ArtifactType, iter_active_artifacts
 from cairn.ingestion import ManualConnector
 from cairn.tui.render import (
     esc,
@@ -30,6 +29,11 @@ class CommandRouter:
 
     def __init__(self, session: CairnSession) -> None:
         self._session = session
+        # Bind handlers from the COMMANDS registry so a spec without a matching
+        # _cmd_ method fails at construction instead of drifting silently.
+        self._handlers: dict[str, Callable[[str], Awaitable[CommandResult]]] = {
+            spec.name: getattr(self, f"_cmd_{spec.name}") for spec in COMMANDS
+        }
 
     async def dispatch(self, text: str) -> CommandResult:
         text = text.strip()
@@ -38,10 +42,7 @@ class CommandRouter:
         if not text.startswith("/"):
             return await self._cmd_query(text)
         name, _, arg = text[1:].partition(" ")
-        handler = cast(
-            "Callable[[str], Awaitable[CommandResult]] | None",
-            getattr(self, f"_cmd_{name}", None),
-        )
+        handler = self._handlers.get(name)
         if handler is None:
             return CommandResult(
                 f"[red]unknown command[/] /{esc(name)} — try [b]/help[/]", ok=False
@@ -105,7 +106,7 @@ class CommandRouter:
         return CommandResult(format_context(ctx, intent=arg))
 
     async def _cmd_artifacts(self, arg: str) -> CommandResult:
-        artifacts = await self._session.layer.artifact_store.list()
+        artifacts = iter_active_artifacts(await self._session.layer.artifact_store.list())
         return CommandResult(format_artifacts(artifacts))
 
     async def _cmd_artifact(self, arg: str) -> CommandResult:

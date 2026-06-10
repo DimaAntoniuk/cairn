@@ -28,11 +28,18 @@ ENTITY_ICONS: dict[EntityType, str] = {
 }
 DEFAULT_ENTITY_ICON = "•"
 
-# Severity → colour for evaluation issues (Rich style names).
+# Threshold → colour ladders (Rich style names), highest threshold first; the
+# last entry doubles as the fallback for out-of-range values.
 SEVERITY_STYLES: tuple[tuple[float, str], ...] = (
     (0.66, "red"),
     (0.33, "yellow"),
     (0.0, "blue"),
+)
+
+CONFIDENCE_STYLES: tuple[tuple[float, str], ...] = (
+    (0.7, "green"),
+    (0.4, "yellow"),
+    (0.0, "red"),
 )
 
 ISSUE_LABELS: dict[IssueKind, str] = {
@@ -47,6 +54,7 @@ MAX_SIDEBAR_ITEMS = 12
 
 __all__ = [
     "ARTIFACT_ICONS",
+    "CONFIDENCE_STYLES",
     "DEFAULT_ARTIFACT_ICON",
     "DEFAULT_ENTITY_ICON",
     "ENTITY_ICONS",
