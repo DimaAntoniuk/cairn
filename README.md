@@ -121,6 +121,38 @@ Run without an API key using `MockLLM` — see [`examples/end_to_end.py`](exampl
 
 ---
 
+## Terminal client (TUI)
+
+A Claude-Code-style terminal UI drives the whole knowledge layer in-process —
+ingest, compile, query, browse artifacts/entities, refresh the wiki, and run
+evaluation, all from one screen with a live artifacts/entities sidebar.
+
+```bash
+pip install 'cairn[tui]'     # adds Textual
+cairn-tui                    # or: python -m cairn.tui
+cairn-tui --seed             # preload demo data to explore offline
+```
+
+It auto-selects the backend: **Anthropic** when `ANTHROPIC_API_KEY` is set,
+otherwise the bundled offline `MockLLM` (`--llm mock|anthropic|auto` to force it).
+
+Type a question to query, or use slash commands:
+
+| Command | Action |
+|---|---|
+| `/ingest <text>` · `/load <path>` | buffer a document |
+| `/process [type]` | extract & compile buffered docs into artifacts |
+| `/query <intent>` (or just type) | assemble token-budgeted runtime context |
+| `/artifacts` · `/artifact <id>` · `/entities` | browse the knowledge store |
+| `/wiki` · `/eval` | refresh wiki pages · run quality checks |
+| `/seed` · `/help` · `/clear` · `/quit` | demo data · help · clear · exit |
+
+The TUI lives in `src/cairn/tui/`, split into `session/` (LLM + `KnowledgeLayer`
+wiring), `render/` (formatting), `commands/` (the router), `app/` (the Textual
+widget), and `cli/` (entry point) — each with `__types`/`__consts`/`__service`/`__spec`.
+
+---
+
 ## Public API surface
 
 | Module | What's there |

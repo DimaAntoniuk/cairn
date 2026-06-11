@@ -38,6 +38,7 @@ postgres = ["asyncpg>=0.29", "sqlalchemy[asyncio]>=2.0"]
 nats = ["nats-py>=2.7"]
 api = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
 llamaindex = ["llama-index-core>=0.10"]
+tui = ["textual>=0.60"]
 observability = ["opentelemetry-api>=1.24", "opentelemetry-sdk>=1.24"]
 all = [
     "llama-index-llms-anthropic>=0.6",
@@ -50,6 +51,7 @@ all = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
     "llama-index-core>=0.10",
+    "textual>=0.60",
     "opentelemetry-api>=1.24",
     "opentelemetry-sdk>=1.24",
 ]
@@ -60,6 +62,9 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
 ]
+
+[project.scripts]
+cairn-tui = "cairn.tui.cli.cli__service:main"
 
 [project.urls]
 Homepage = "https://github.com/DimaAntoniuk/cairn"
@@ -113,11 +118,18 @@ module = [
     "langfuse",
     "opentelemetry",
     "opentelemetry.*",
+    "textual",
+    "textual.*",
 ]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["cairn.api.*", "cairn.llamaindex_bridge", "cairn.infra.llm.llm__llamaindex"]
+module = [
+    "cairn.api.*",
+    "cairn.llamaindex_bridge",
+    "cairn.infra.llm.llm__llamaindex",
+    "cairn.tui.*",
+]
 disallow_untyped_decorators = false
 disable_error_code = ["misc", "no-any-unimported"]
 
