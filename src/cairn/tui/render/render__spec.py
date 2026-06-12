@@ -17,6 +17,7 @@ from cairn.tui.render import (
     format_entities,
     format_issues,
     format_sidebar_artifacts,
+    strip_markup,
 )
 
 
@@ -32,6 +33,20 @@ def _artifact(title: str = "Germany state", score: float = 0.82) -> Artifact:
 
 def test_esc_neutralises_markup_brackets() -> None:
     assert esc("a [bold] tag") == r"a \[bold] tag"
+
+
+def test_strip_markup_removes_tags() -> None:
+    assert strip_markup("[b]3 artifact(s)[/b] [dim]hint[/dim]") == "3 artifact(s) hint"
+
+
+def test_strip_markup_restores_escaped_content_brackets() -> None:
+    assert strip_markup(esc("risk [P1] in json: [1,2]")) == "risk [P1] in json: [1,2]"
+
+
+def test_strip_markup_round_trips_rendered_output() -> None:
+    out = strip_markup(format_artifacts([_artifact(title="risk [P1]")]))
+    assert "risk [P1]" in out
+    assert "[b]" not in out
 
 
 def test_format_artifacts_empty_hints_at_next_step() -> None:

@@ -141,15 +141,40 @@ Type a question to query, or use slash commands:
 | Command | Action |
 |---|---|
 | `/ingest <text>` · `/load <path>` | buffer a document |
-| `/process [type]` | extract & compile buffered docs into artifacts |
-| `/query <intent>` (or just type) | assemble token-budgeted runtime context |
+| `/process --type <type>` | extract & compile buffered docs into artifacts |
+| `/query [--flags] <intent>` (or just type) | assemble token-budgeted runtime context |
 | `/artifacts` · `/artifact <id>` · `/entities` | browse the knowledge store |
 | `/wiki` · `/eval` | refresh wiki pages · run quality checks |
-| `/seed` · `/help` · `/clear` · `/quit` | demo data · help · clear · exit |
+| `/seed` · `/help [command]` · `/clear` · `/quit` | demo data · help · clear · exit |
+
+### Agent-friendly commands
+
+Every command takes `--format rich|plain|json` (JSON is a compact single-line
+envelope with a stable `"ok"` key) plus filters and selectors that map straight
+onto the layer's query parameters — flags first, free text after:
+
+```text
+/artifacts --type pricing_policy --min-conf 0.7 --limit 5 --format json
+/artifact --fields title,summary art_3f2a        # id prefix is enough
+/entities --type person --name acme --format json
+/query --budget 2000 --types pricing_policy --top-k 3 germany risks
+/eval --contradictions --min-severity 0.5 --format json
+/help --format json                              # full machine-readable command schema
+```
+
+`--exec` runs commands without the Textual UI (and without the `tui` extra) —
+results print to stdout, the exit code reflects failures:
+
+```bash
+cairn-tui --llm mock --seed \
+  --exec '/artifacts --format json' \
+  --exec '/query --top-k 3 --format json germany risks'
+```
 
 The TUI lives in `src/cairn/tui/`, split into `session/` (LLM + `KnowledgeLayer`
-wiring), `render/` (formatting), `commands/` (the router), `app/` (the Textual
-widget), and `cli/` (entry point) — each with `__types`/`__consts`/`__service`/`__spec`.
+wiring), `render/` (Rich formatting), `serialize/` (JSON envelopes), `commands/`
+(the router), `app/` (the Textual widget), and `cli/` (entry point) — each with
+`__types`/`__consts`/`__service`/`__spec`.
 
 ---
 

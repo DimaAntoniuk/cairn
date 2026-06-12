@@ -88,16 +88,19 @@ class CairnApp(App[None]):
             await self._apply(result)
 
     async def _apply(self, result: CommandResult) -> None:
+        # Plain/JSON bodies (markup=False) are escaped so brackets render
+        # literally instead of being parsed as Rich tags by the RichLog.
+        body = result.body if result.markup else esc(result.body)
         if result.action == ACTION_QUIT:
-            if result.body:
-                self._write(result.body)
+            if body:
+                self._write(body)
             self.exit()
             return
         if result.action == ACTION_CLEAR:
             self.action_clear()
             return
-        if result.body:
-            self._write(result.body)
+        if body:
+            self._write(body)
         if result.refresh_sidebar:
             await self._refresh_sidebar()
 

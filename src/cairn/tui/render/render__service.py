@@ -1,3 +1,4 @@
+import re
 from collections.abc import Sequence
 
 from cairn.domain import Artifact, AssembledContext, Entity, EvalIssue
@@ -17,6 +18,22 @@ from .render__consts import (
 def esc(text: str) -> str:
     """Escape Rich markup so arbitrary content renders literally in a RichLog."""
     return text.replace("[", r"\[")
+
+
+_ESCAPED_BRACKET_SENTINEL = "\x00"
+_MARKUP_TAG_RE = re.compile(r"\[[^\[\]]*\]")
+
+
+def strip_markup(markup: str) -> str:
+    """Plain-text rendering of markup produced by this module.
+
+    Safe because ``esc()`` guarantees every literal ``[`` in content arrives as
+    ``\\[``: protect those, drop the remaining ``[tag]`` spans, restore brackets.
+    Hand-rolled so plain output never needs the optional ``rich`` dependency.
+    """
+    text = markup.replace(r"\[", _ESCAPED_BRACKET_SENTINEL)
+    text = _MARKUP_TAG_RE.sub("", text)
+    return text.replace(_ESCAPED_BRACKET_SENTINEL, "[")
 
 
 def _style_for(value: float, styles: tuple[tuple[float, str], ...]) -> str:
@@ -136,4 +153,5 @@ __all__ = [
     "format_issues",
     "format_sidebar_artifacts",
     "format_sidebar_entities",
+    "strip_markup",
 ]

@@ -7,6 +7,7 @@ from .render__service import (
     format_issues,
     format_sidebar_artifacts,
     format_sidebar_entities,
+    strip_markup,
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "format_issues",
     "format_sidebar_artifacts",
     "format_sidebar_entities",
+    "strip_markup",
 ]
